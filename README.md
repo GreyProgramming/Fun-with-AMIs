@@ -4,22 +4,39 @@ Using GCP to provision an AWS AMI, and using terraform on that to create more, t
 ## Setup an AWS VPC, Subnet, Gateway, Route table and EC2 instance
 
 vpc_id=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query Vpc.VpcId --output text)
+
 echo ${vpc_id}
+
 subnet_id=$(aws ec2 create-subnet --vpc-id {vpc_id} --cidr-block 10.0.1.0/24)
+
 echo ${subnet_id}
+
 gateway_id=$(aws ec2 create-internet-gateway)
+
 echo ${gateway_id}
+
 aws ec2 attach-internet-gateway --internet-gateway-id {gateway_id} --vpc-id {vpc_id}
+
 route_id=$(aws ec2 create-route-table --vpc-id {vpc_id})
+
 echo ${route_id}
+
 aws ec2 create-route --route-table-id {route_id} --destination-cidr-block 0.0.0.0/0 --gateway-id {gateway_id}
+
 security_id=$(aws ec2 create-security-group --group-name security --description "custom security group" --vpc-id {vpc_id})
+
 ip_id=$($ curl https://checkip.amazonaws.com)
+
 aws ec2 authorize-security-group-ingress --group-id sg-903004f8 --protocol tcp --port 22 --cidr $(ip_id)/32
+
 aws ec2 create-key-pair --key-name AccessKey --query ‘KeyMaterial’ --output text > ~/.ssh/AccessKey.pem
+
 chmod 400 ~/.ssh/AccessKey.pem
+
 ip_address=$(aws ec2 run-instances --image-id ami-0ee246e709782b1be --count 1 --instance-type t2.micro --key-name AccessKey --subnet-id {subnet_id})
+
 echo ${ip_address}
+
 ssh -I ~/.ssh/AccessKey.pem ubuntu@{ip_address}
 
 ## Download terraform on that EC2 instance, unzip and remove download file, make infra and move in
