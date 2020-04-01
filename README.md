@@ -42,8 +42,11 @@ ssh -I ~/.ssh/AccessKey.pem ubuntu@{ip_address}
 ## Download terraform on that EC2 instance, unzip and remove download file, make infra and move in
 
 wget https://releases.hashicorp.com/terraform/0.11.3/terraform_0.11.3_linux_amd64.zip
+
 sudo unzip terraform_0.11.3_linux_amd64.zip -d /usr/local/bin/
+
 rm terraform_0.11.3_linux_amd64.zip
+
 mkdir infra && cd infra
 
 ## Setup the Main, Variables, outputs, etc 
