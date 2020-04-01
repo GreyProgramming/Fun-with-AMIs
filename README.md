@@ -76,12 +76,12 @@ count = "${var.instance_count}"
 }
 
 resource "aws_subnet" "web_subnet" {
-  # Use the count meta-parameter to create multiple copies
+  ### Use the count meta-parameter to create multiple copies
   count = "${var.instance_count}"
   vpc_id            = "${aws_vpc.web_vpc.id}"
-  # cidrsubnet function splits a cidr block into subnets
+  ### cidrsubnet function splits a cidr block into subnets
   cidr_block        = "${cidrsubnet(var.network_cidr, 1, count.index)}"
-  # element retrieves a list element at a given index
+  ### element retrieves a list element at a given index
   availability_zone = "${element(var.availability_zones, count.index)}"
 
   tags {
@@ -91,16 +91,16 @@ resource "aws_subnet" "web_subnet" {
 
 resource "aws_instance" "web" {
   count         = "${var.instance_count}"
-  # lookup returns a map value for a given key
+  ### lookup returns a map value for a given key
   ami           = "${lookup(var.ami_ids, " eu-west-2")}"
   instance_type = "t2.micro"
-  # Use the subnet ids as an array and evenly distribute instances
+  ### Use the subnet ids as an array and evenly distribute instances
   subnet_id     = "${element(aws_subnet.web_subnet.*.id, count.index % length(aws_subnet.web_subnet.*.id))}"
   
-  # Use instance user_data to serve the custom website
+  ### Use instance user_data to serve the custom website
   user_data     = "${file("user_data.sh")}"
   
-  # Attach the web server security group
+  ### Attach the web server security group
   vpc_security_group_ids = ["${aws_security_group.web_sg.id}"]
 
   tags {
@@ -111,22 +111,19 @@ resource "aws_instance" "web" {
 EOF
 
 cat > variables.tf <<'EOF'
-# Example of a string variable
+
 variable network_cidr {
   default = "192.168.100.0/24"
 }
 
-# Example of a list variable
 variable availability_zones {
   default = ["eu-west-2a ", " eu-west-2b"]
 }
 
-# Example of an integer variable
 variable instance_count {
   default = 2
 }
 
-# Example of a map variable
 variable ami_ids {
   default = {
     " eu-west-2a" = "ami-0fb83677"
@@ -142,7 +139,7 @@ output "site_address" {
 }
 
 output "ips" {
-  # join all the instance private IPs with commas separating them
+  ### join all the instance private IPs with commas separating them
   value = "${join(", ", aws_instance.web.*.private_ip)}"
 }
 EOF
@@ -158,12 +155,12 @@ END
 EOF
 
 cat > networking.tf <<'EOF'
-# Internet gateway to reach the internet
+### Internet gateway to reach the internet
 resource "aws_internet_gateway" "web_igw" {
   vpc_id = "${aws_vpc.web_vpc.id}"
 }
 
-# Route table with a route to the internet
+### Route table with a route to the internet
 resource "aws_route_table" "public_rt" {
   vpc_id = "${aws_vpc.web_vpc.id}"
   
@@ -177,9 +174,9 @@ resource "aws_route_table" "public_rt" {
   }
 }
 
-# Subnets with routes to the internet
+### Subnets with routes to the internet
 resource "aws_subnet" "public_subnet" {
-  # Use the count meta-parameter to create multiple copies
+  ### Use the count meta-parameter to create multiple copies
   count             = 2
   vpc_id            = "${aws_vpc.web_vpc.id}"
   cidr_block        = "${cidrsubnet(var.network_cidr, 2, count.index + 2)}"
@@ -190,7 +187,7 @@ resource "aws_subnet" "public_subnet" {
   }
 }
 
-# Associate public route table with the public subnets
+### Associate public route table with the public subnets
 resource "aws_route_table_association" "public_subnet_rta" {
   count          = 2
   subnet_id      = "${aws_subnet.public_subnet.*.id[count.index]}"
@@ -212,7 +209,7 @@ resource "aws_security_group" "elb_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow all outbound traffic
+  ### Allow all outbound traffic
   egress {
     from_port = 0
     to_port = 0
@@ -226,7 +223,7 @@ resource "aws_security_group" "web_sg" {
   description = "Allow HTTP traffic from ELB security group"
   vpc_id      = "${aws_vpc.web_vpc.id}"
 
-  # HTTP access from the VPC
+  ### HTTP access from the VPC
   ingress {
     from_port       = 80
     to_port         = 80
@@ -234,7 +231,7 @@ resource "aws_security_group" "web_sg" {
     security_groups = ["${aws_security_group.elb_sg.id}"]
   }
 
-  # Allow all outbound traffic
+  ### Allow all outbound traffic
   egress {
     from_port = 0
     to_port = 0
@@ -252,7 +249,7 @@ resource "aws_elb" "web" {
   security_groups = ["${aws_security_group.elb_sg.id}"]
   instances = ["${aws_instance.web.*.id}"]
 
-  # Listen for HTTP requests and distribute them to the instances
+  ### Listen for HTTP requests and distribute them to the instances
   listener { 
     instance_port     = 80
     instance_protocol = "http"
@@ -260,7 +257,7 @@ resource "aws_elb" "web" {
     lb_protocol       = "http"
   }
 
-  # Check instance health every 10 seconds
+  ### Check instance health every 10 seconds
   health_check {
     healthy_threshold = 2
     unhealthy_threshold = 2
