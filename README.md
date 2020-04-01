@@ -244,7 +244,11 @@ EOF
 ## Tell it to go
 
 terraform init
+
 terraform apply
+
 terraform output ips
+
 site_address=$(terraform output site_address)
+
 watch curl -s $site_address
